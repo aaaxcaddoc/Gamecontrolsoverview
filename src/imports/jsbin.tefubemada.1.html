@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<!--
+Created using JS Bin
+http://jsbin.com
+
+Copyright (c) 2026 by anonymous (http://jsbin.com/tefubemada/1/edit)
+
+Released under the MIT license: http://jsbin.mit-license.org
+-->
+<meta name="robots" content="noindex">
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>NEURAL PULSE // STABLE_BUILD</title>
+    <style>
+        :root {
+          --cyan: #00f2ff;
+          --pink: #ff2d55;
+          --bg: #05070a;
+        }
+
+        body {
+          margin: 0; background: var(--bg); overflow: hidden;
+          font-family: 'Courier New', monospace; cursor: crosshair; color: #fff;
+        }
+
+        /* Scanline Overlay */
+        body::before {
+          content: " "; display: block; position: absolute; inset: 0;
+          background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.2) 50%);
+          background-size: 100% 4px; z-index: 10; pointer-events: none;
+        }
+
+        #overlay {
+          position: fixed; inset: 0; background: rgba(0,0,0,0.9);
+          display: flex; align-items: center; justify-content: center;
+          z-index: 100; backdrop-filter: blur(15px);
+        }
+
+        #menu {
+          width: 380px; padding: 40px; border: 1px solid var(--cyan);
+          background: #000; text-align: center; box-shadow: 0 0 30px rgba(0, 242, 255, 0.2);
+        }
+
+        .row { display: flex; justify-content: space-between; margin: 15px 0; font-size: 12px; }
+        
+        select, button {
+          background: transparent; color: var(--cyan); border: 1px solid var(--cyan);
+          font-family: inherit; padding: 8px; cursor: pointer; outline: none;
+        }
+
+        #start-btn {
+          width: 100%; margin-top: 25px; padding: 15px;
+          background: var(--cyan); color: #000; font-weight: bold; letter-spacing: 5px;
+        }
+
+        #start-btn:hover { background: #fff; border-color: #fff; }
+
+        #ui {
+          position: absolute; top: 30px; left: 30px; pointer-events: none;
+          display: none; z-index: 20;
+        }
+
+        .score { font-size: 50px; font-weight: 900; letter-spacing: -2px; }
+        #combo { color: var(--cyan); font-size: 14px; letter-spacing: 2px; }
+        
+        canvas { display: block; }
+    </style>
+<style id="jsbin-css">
+:root {
+  --neon-cyan: #00f2ff;
+  --neon-pink: #ff2d55;
+  --bg-dark: #05070a;
+}
+
+body {
+  margin: 0;
+  /* Myth handles next-gen color manipulation and variables */
+  background-color: var(--bg-dark);
+  background-image: 
+    linear-gradient(color(var(--bg-dark) alpha(0%)) 50%, color(#000 alpha(25%)) 50%),
+    linear-gradient(90deg, color(red alpha(6%)), color(green alpha(2%)), color(blue alpha(6%)));
+  background-size: 100% 4px, 3px 100%;
+  overflow: hidden;
+  font-family: 'Syncopate', sans-serif;
+  text-transform: uppercase;
+  cursor: none;
+}
+
+canvas {
+  display: block;
+  filter: contrast(110%) brightness(110%) saturate(120%);
+}
+
+#ui {
+  position: absolute;
+  top: 40px;
+  left: 40px;
+  color: #fff;
+  pointer-events: none;
+  text-shadow: 0 0 10px color(#fff alpha(50%));
+}
+
+.score {
+  font-size: 64px;
+  font-weight: 900;
+  line-height: 0.8;
+  margin-bottom: 10px;
+  background: linear-gradient(to bottom, #fff 40%, #777 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+#combo {
+  color: var(--neon-cyan);
+  font-size: 14px;
+  letter-spacing: 4px;
+  border-left: 3px solid var(--neon-cyan);
+  padding-left: 15px;
+  /* Myth allows cleaner transition syntax */
+  transition: transform 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+body::after {
+  content: "";
+  display: block;
+  position: absolute;
+  top: 0; left: 0; bottom: 0; right: 0;
+  background: radial-gradient(circle, color(#121010 alpha(0%)) 50%, color(#000 alpha(40%)) 100%);
+  pointer-events: none;
+  z-index: 10;
+}
+
+body::before {
+  content: "SYSTEM_ACTIVE // NEURAL_LINK_ESTABLISHED";
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  color: var(--neon-pink);
+  font-size: 10px;
+  letter-spacing: 2px;
+  opacity: 0.6;
+}
+
+</style>
+</head>
+<body>
+
+<div id="ui">
+    <div class="score" id="score">0000</div>
+    <div id="combo">SYNC: 1.0x</div>
+</div>
+
+<div id="overlay">
+    <div id="menu">
+        <h2 style="letter-spacing: 12px; margin-bottom: 30px;">NEURAL PULSE</h2>
+        <div class="row">
+            <label>INTERNAL RESOLUTION</label>
+            <select id="res-config">
+                <option value="1">100% (NATIVE)</option>
+                <option value="0.75">75% (SMOOTH)</option>
+                <option value="0.5">50% (RETRO)</option>
+            </select>
+        </div>
+        <div class="row">
+            <label>NEURAL GLOW (FX)</label>
+            <select id="glow-config">
+                <option value="high">ULTRA</option>
+                <option value="off">OFF (PERF)</option>
+            </select>
+        </div>
+        <div class="row">
+            <label>AUDIO LINK</label>
+            <select id="audio-config">
+                <option value="on">ENABLED</option>
+                <option value="off">MUTED</option>
+            </select>
+        </div>
+        <button id="start-btn">INITIALIZE LINK</button>
+    </div>
+</div>
+
+<canvas id="c"></canvas>
+
+<script>
+/** 
+ * CORE ENGINE - UNIFIED BUILD 
+ */
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+const scoreEl = document.getElementById('score');
+const comboEl = document.getElementById('combo');
+const overlay = document.getElementById('overlay');
+const startBtn = document.getElementById('start-btn');
+
+let audioCtx;
+const state = {
+    playing: false,
+    w: 0, h: 0, scale: 1,
+    score: 0, combo: 1, 
+    timeSlow: 1, shake: 0,
+    audioEnabled: true,
+    mouse: { x: 0, y: 0 }
+};
+
+let player = { x: 0, y: 0, r: 10, trail: [] };
+let enemies = [];
+let particles = [];
+
+// Procedural Sound Engine
+const playSfx = (freq, type, dur, vol) => {
+    if (!state.audioEnabled || !audioCtx) return;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + dur);
+    osc.start(); osc.stop(audioCtx.currentTime + dur);
+};
+
+const resetGame = () => {
+    // 1. Get Config
+    state.scale = parseFloat(document.getElementById('res-config').value);
+    state.audioEnabled = document.getElementById('audio-config').value === 'on';
+    const glow = document.getElementById('glow-config').value;
+
+    // 2. Setup Canvas
+    state.w = canvas.width = window.innerWidth * state.scale;
+    state.h = canvas.height = window.innerHeight * state.scale;
+    canvas.style.width = window.innerWidth + 'px';
+    canvas.style.height = window.innerHeight + 'px';
+    canvas.style.filter = glow === 'high' ? 'contrast(1.2) brightness(1.1) saturate(1.2)' : 'none';
+
+    // 3. Setup Entities
+    player.x = state.w / 2;
+    player.y = state.h / 2;
+    player.trail = [];
+    enemies = [];
+    particles = [];
+    state.score = 0;
+    state.combo = 1;
+    state.playing = true;
+
+    // 4. UI Transition
+    overlay.style.display = 'none';
+    document.getElementById('ui').style.display = 'block';
+};
+
+// Start Button Handler
+startBtn.addEventListener('click', () => {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    resetGame();
+});
+
+// Input handling scaled to Resolution
+window.onmousemove = e => {
+    state.mouse.x = e.clientX * state.scale;
+    state.mouse.y = e.clientY * state.scale;
+};
+
+const createExplosion = (x, y, color) => {
+    state.shake = 10 * state.scale;
+    for(let i=0; i<10; i++) {
+        particles.push({
+            x, y, vx: (Math.random()-0.5)*12 * state.scale, 
+            vy: (Math.random()-0.5)*12 * state.scale, 
+            life: 1, color
+        });
+    }
+};
+
+const spawn = () => {
+    if (!state.playing) return;
+    const isEnemy = Math.random() > 0.35;
+    const side = Math.floor(Math.random() * 4);
+    let x, y;
+    if(side === 0) { x = Math.random()*state.w; y = -50; }
+    else if(side === 1) { x = Math.random()*state.w; y = state.h+50; }
+    else if(side === 2) { x = -50; y = Math.random()*state.h; }
+    else { x = state.w+50; y = Math.random()*state.h; }
+    
+    enemies.push({
+        x, y, type: isEnemy ? 'bad' : 'good',
+        speed: (2.5 + (state.score/1500)) * state.scale * (isEnemy ? 1 : 0.7),
+        r: (isEnemy ? 13 : 8) * state.scale
+    });
+};
+
+const mainLoop = () => {
+    // Canvas Clear (with Motion Blur)
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.fillStyle = `rgba(5, 7, 10, ${0.25 * state.timeSlow})`;
+    ctx.fillRect(0, 0, state.w, state.h);
+
+    if (state.playing) {
+        if (state.shake > 0) {
+            ctx.translate(Math.random()*state.shake - state.shake/2, Math.random()*state.shake - state.shake/2);
+            state.shake *= 0.9;
+        }
+
+        // Sync player to Mouse
+        player.x = state.mouse.x;
+        player.y = state.mouse.y;
+
+        // Proximity Check for Slow-Mo
+        state.timeSlow = 1;
+        for(let e of enemies) {
+            if (e.type === 'bad' && Math.hypot(e.x - player.x, e.y - player.y) < 70 * state.scale) {
+                state.timeSlow = 0.3; break;
+            }
+        }
+
+        // Particles Update
+        for(let i=particles.length-1; i>=0; i--) {
+            let p = particles[i];
+            p.x += p.vx * state.timeSlow; p.y += p.vy * state.timeSlow; p.life -= 0.03;
+            if (p.life <= 0) particles.splice(i, 1);
+            else {
+                ctx.fillStyle = `rgba(${p.color}, ${p.life})`;
+                ctx.fillRect(p.x, p.y, 2 * state.scale, 2 * state.scale);
+            }
+        }
+
+        // Object Management
+        if(Math.random() < 0.07) spawn();
+        
+        for(let i=enemies.length-1; i>=0; i--) {
+            let e = enemies[i];
+            let ang = Math.atan2(player.y - e.y, player.x - e.x);
+            e.x += Math.cos(ang) * e.speed * state.timeSlow;
+            e.y += Math.sin(ang) * e.speed * state.timeSlow;
+
+            ctx.fillStyle = e.type === 'good' ? '#fff' : '#ff2d55';
+            ctx.beginPath(); ctx.arc(e.x, e.y, e.r, 0, Math.PI*2); ctx.fill();
+
+            // Collision Detection
+            const d = Math.hypot(e.x - player.x, e.y - player.y);
+            if (d < e.r + (player.r * state.scale)) {
+                if (e.type === 'good') {
+                    state.score += 10 * state.combo;
+                    state.combo += 0.1;
+                    playSfx(400 + (state.combo * 50), 'triangle', 0.1, 0.1);
+                    createExplosion(e.x, e.y, "255, 255, 255");
+                    enemies.splice(i, 1);
+                } else {
+                    state.playing = false;
+                    playSfx(100, 'sawtooth', 0.4, 0.2);
+                    overlay.style.display = 'flex';
+                    startBtn.innerText = "RE-INITIALIZE LINK";
+                }
+            }
+        }
+
+        // Player Trail
+        player.trail.push({x: player.x, y: player.y});
+        if(player.trail.length > 8) player.trail.shift();
+        player.trail.forEach((t, i) => {
+            ctx.fillStyle = `rgba(0, 242, 255, ${i/8})`;
+            ctx.beginPath(); ctx.arc(t.x, t.y, player.r * state.scale * (i/8), 0, Math.PI*2); ctx.fill();
+        });
+
+        scoreEl.innerText = Math.floor(state.score).toString().padStart(4, '0');
+        comboEl.innerText = `SYNC: ${state.combo.toFixed(1)}x`;
+    }
+
+    requestAnimationFrame(mainLoop);
+};
+
+// Start Loop
+mainLoop();
+</script>
+<script id="jsbin-javascript">
+// --- MENU & GRAPHICS LOGIC ---
+let isPlaying = false;
+let renderScale = 1;
+
+const startBtn = document.getElementById('start-btn');
+const gfxOpt = document.getElementById('gfx-opt');
+const resOpt = document.getElementById('res-opt');
+const overlay = document.getElementById('overlay');
+
+// 1. Graphics Handler
+const applySettings = () => {
+    // Post-Process
+    if(gfxOpt.value === 'all') canvas.style.filter = 'contrast(1.1) brightness(1.1) saturate(1.2)';
+    else if(gfxOpt.value === 'no-glow') canvas.style.filter = 'contrast(1.1)';
+    else canvas.style.filter = 'none';
+
+    // Resolution
+    renderScale = parseFloat(resOpt.value);
+    w = canvas.width = window.innerWidth * renderScale;
+    h = canvas.height = window.innerHeight * renderScale;
+    canvas.style.width = window.innerWidth + 'px';
+    canvas.style.height = window.innerHeight + 'px';
+};
+
+startBtn.onclick = () => {
+    applySettings();
+    isPlaying = true;
+    overlay.style.display = 'none';
+    if(audio.state === 'suspended') audio.resume();
+    init();
+};
+
+// 2. Modified Loop
+const loop = () => {
+    if(!isPlaying) return requestAnimationFrame(loop);
+
+    ctx.setTransform(renderScale, 0, 0, renderScale, 0, 0); // Handle Res Scale
+    
+    // ... (Insert your previous game logic here) ...
+
+    window.neuralPulseLoop = requestAnimationFrame(loop);
+};
+
+// Start the loop (but it waits for isPlaying)
+init();
+loop();
+
+</script>
+</body>
+</html>
